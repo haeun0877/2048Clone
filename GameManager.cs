@@ -1,11 +1,14 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
     public GameObject[] n;
+    public Text Score, BestScore, Plus;
+    public GameObject Quit;
 
-    int x, y, j, k, l;
+    int x, y, j, k, l, score;
     bool wait, move, stop;
     Vector3 firstPos, gap, twoPos;
 
@@ -17,6 +20,7 @@ public class GameManager : MonoBehaviour
     {
         Spawn();
         Spawn();
+        BestScore.text = PlayerPrefs.GetInt("BestScore").ToString();
     }
 
     // Update is called once per frame
@@ -24,6 +28,8 @@ public class GameManager : MonoBehaviour
     {
         // 뒤로가기
         if (Input.GetKeyDown(KeyCode.Escape)) Application.Quit();
+
+        if (stop) return;
 
         if (Input.GetMouseButtonDown(0))
         {
@@ -105,6 +111,20 @@ public class GameManager : MonoBehaviour
                     Spawn();
                     k = 0;
                     l = 0;
+
+                    //점수
+                    if (score > 0)
+                    {
+                        Plus.text = "+" + score.ToString()+"    ";
+                        Plus.GetComponent<Animator>().SetTrigger("PlusBack");
+                        Plus.GetComponent<Animator>().SetTrigger("Plus");
+                        Score.text = (int.Parse(Score.text) + score).ToString();
+                        if (PlayerPrefs.GetInt("BestScore", 0) < int.Parse(Score.text))
+                            PlayerPrefs.SetInt("BestScore", int.Parse(Score.text));
+                        BestScore.text = PlayerPrefs.GetInt("BestScore").ToString();
+                        score = 0;
+                    }
+
                     for(x =0; x<=3; x++)
                     {
                         for (y=0; y<=3; y++)
@@ -120,23 +140,31 @@ public class GameManager : MonoBehaviour
                             }
                         }
                     }
-                    
-                    if(k == 0)
+
+                    if (k == 0)
                     {
                         //가로, 세로 같은 블럭이 없으면 l이 0이되어서 게임오버
-                        for(y=0; y<=3; y++)
+                        for (y = 0; y <= 3; y++)
                         {
-                            for(x=0; x<=2; x++)
+                            for (x = 0; x <= 2; x++)
                             {
                                 if (Square[x, y].name == Square[x + 1, y].name) l++;
                             }
                         }
-                        for(x=0; x<=3; x++)
+                        for (x = 0; x <= 3; x++)
                         {
                             for (y = 0; y <= 2; y++)
                                 if (Square[x, y].name == Square[x, y + 1].name) l++;
                         }
+
+                        if (l == 0)
+                        {
+                            Quit.SetActive(true);
+                            stop = true;
+                            return;
+                        }
                     }
+
                 }
 
             }
@@ -179,7 +207,7 @@ public class GameManager : MonoBehaviour
     void MoveOrCombine(int x1, int y1, int x2, int y2)
     {
         //이동될 좌표가 비어있고 이동 전 좌표에 존재하면 이동
-        if ( Square[x2, y2] == null && Square[x1,y1] != null)
+        if (Square[x2, y2] == null && Square[x1, y1] != null)
         {
             move = true;
             Square[x1, y1].GetComponent<Moving>().Move(x2, y2, false);
@@ -205,6 +233,7 @@ public class GameManager : MonoBehaviour
             Square[x2, y2] = Instantiate(n[j + 1], new Vector3(-1.8f + 1.2f * x2, -1.8f + 1.2f * y2), Quaternion.identity);
             Square[x2, y2].tag = "Combine";
             Square[x2, y2].GetComponent<Animator>().SetTrigger("Combine");
+            score +=(int) Mathf.Pow(2, j + 2); //거듭제곱 4를 추가
         }
     }
 
